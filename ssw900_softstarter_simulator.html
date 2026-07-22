@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d131c">
+<title>SSW900 — Simulador de Partida Suave | Luiz Fernando Gonzaga Penaforte</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#0d131c;
+    --panel:#141c29;
+    --panel-2:#1a2333;
+    --border:#2b3852;
+    --border-soft:#212c40;
+    --text:#e9eefb;
+    --text-dim:#9aa8bd;
+    --text-faint:#66748c;
+    --blue:#3b8ef0;
+    --blue-soft:rgba(59,142,240,.14);
+    --amber:#f0a824;
+    --amber-soft:rgba(240,168,36,.14);
+    --green:#33c579;
+    --green-soft:rgba(51,197,121,.14);
+    --red:#ff5a68;
+    --red-soft:rgba(255,90,104,.13);
+    --shadow: 0 2px 4px rgba(0,0,0,.28), 0 10px 26px rgba(0,0,0,.4);
+    font-size:14px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; overflow-y:auto; overflow-x:hidden; }
+  body{
+    background:
+      radial-gradient(ellipse at 15% -10%, rgba(21,101,192,.14), transparent 50%),
+      radial-gradient(ellipse at 100% 0%, rgba(31,157,85,.10), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:12px;
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+  }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  .app{ max-width:1220px; margin:0 auto; width:100%; }
+
+  /* ============ HEADER / SIGNATURE ============ */
+  .topbar{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    box-shadow:var(--shadow);
+    padding:10px 14px; margin-bottom:10px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    flex-shrink:0;
+  }
+  .signature{ display:flex; align-items:center; gap:11px; }
+  .avatar{
+    width:38px;height:38px;border-radius:50%;
+    background:linear-gradient(150deg,#1565c0,#0d3f7a);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff; font-weight:800; font-size:13px; letter-spacing:.4px;
+    box-shadow:0 4px 12px rgba(21,101,192,.35);
+    flex-shrink:0;
+  }
+  .signature h1{ font-size:15.5px; font-weight:800; letter-spacing:.1px; color:var(--text); }
+  .signature .role{ font-size:11px; color:var(--text-dim); font-weight:500; margin-top:1px; }
+  .signature .proj{ font-size:10px; color:var(--text-faint); font-weight:600; margin-top:3px; text-transform:uppercase; letter-spacing:.5px; }
+
+  .mode-toggle{
+    display:flex; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:10px; padding:3px; gap:3px;
+  }
+  .mode-btn{
+    appearance:none; border:none; cursor:pointer; background:transparent; color:var(--text-dim);
+    font-family:'Inter',sans-serif; font-weight:700; font-size:11.5px; letter-spacing:.1px;
+    padding:8px 12px; border-radius:7px; transition:.15s ease;
+  }
+  .mode-btn.active{ background:var(--blue); color:#fff; box-shadow:0 3px 10px rgba(21,101,192,.35); }
+  .mode-btn.active.delta-active{ background:var(--amber); color:#2a1a00; box-shadow:0 3px 10px rgba(232,150,12,.35); }
+  .mode-btn:not(.active):hover{ color:var(--text); }
+
+  /* ============ LAYOUT ============ */
+  .grid{ display:grid; grid-template-columns: 1.35fr 0.85fr 0.85fr; gap:12px; align-items:start; }
+  @media (max-width: 1200px){ .grid{ grid-template-columns: 1.3fr 1fr; } .grid > .diagram-panel{ grid-column: 1 / -1; } }
+  @media (max-width: 700px){ .grid{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    box-shadow:var(--shadow); padding:12px 14px 12px;
+  }
+  .panel-title{
+    font-size:10px; text-transform:uppercase; letter-spacing:1.1px; font-weight:700;
+    color:var(--text-faint); margin-bottom:7px; display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .diagram-panel{}
+  svg#diagram{ width:100%; height:auto; display:block; }
+
+  /* ============ DIAGRAM ============ */
+  svg#diagram{ width:100%; height:auto; display:block; }
+  .legend{ display:flex; flex-wrap:wrap; gap:11px; padding-top:6px; border-top:1px solid var(--border-soft); margin-top:6px; flex-shrink:0; }
+  .legend span{ font-size:10.5px; color:var(--text-dim); display:flex; align-items:center; gap:5px; font-weight:500; }
+  .dot{ width:7px;height:7px;border-radius:50%; display:inline-block; }
+
+  .whats-happening{
+    margin-top:6px; padding:8px 11px; border-radius:10px;
+    background:var(--panel-2); border:1px solid var(--border-soft);
+    display:flex; gap:8px; align-items:flex-start;
+    flex-shrink:0;
+  }
+  .whats-happening .ico{ font-size:14px; margin-top:1px; }
+  .whats-happening p{ font-size:11.5px; color:var(--text-dim); line-height:1.5; }
+  .whats-happening b{ color:var(--text); font-weight:700; }
+  .whats-happening .eyebrow{ font-size:9.5px; text-transform:uppercase; letter-spacing:.9px; font-weight:700; color:var(--blue); margin-bottom:2px; display:block; }
+
+  /* ============ SIDE COLUMN ============ */
+  .side{ display:flex; flex-direction:column; gap:8px; }
+
+  .btn-row{ display:flex; gap:8px; }
+  .btn{
+    flex:1; appearance:none; border:none; cursor:pointer; border-radius:9px;
+    padding:10px 10px; font-family:'Inter',sans-serif; font-weight:700; font-size:12.5px;
+    letter-spacing:.15px; transition:.15s ease; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn-start{ background:var(--green); color:#fff; box-shadow:0 3px 10px rgba(31,157,85,.3); }
+  .btn-start:hover{ box-shadow:0 4px 16px rgba(31,157,85,.45); transform:translateY(-1px); }
+  .btn-start:disabled{ opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-reset{ background:var(--panel-2); color:var(--text-dim); border:1px solid var(--border); }
+  .btn-reset:hover{ color:var(--text); border-color:var(--text-faint); }
+  .btn-demo{ background:var(--panel-2); color:var(--blue); border:1px solid var(--blue); }
+  .btn-demo:hover{ background:var(--blue-soft); }
+  .btn-demo.demo-active{ background:var(--blue); color:#fff; box-shadow:0 3px 10px rgba(59,142,240,.4); }
+  .btn-remote{ background:var(--panel-2); color:var(--text-dim); border:1px solid var(--border); width:100%; }
+  .btn-remote.remote-on{ background:var(--green); color:#04241a; border-color:var(--green); box-shadow:0 3px 10px rgba(51,197,121,.4); }
+
+  .status-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .status-cell{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:8px 10px; }
+  .status-cell .label{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.7px; font-weight:700; }
+  .status-cell .value{ font-size:16px; font-weight:700; margin-top:2px; color:var(--text); }
+  .status-cell.wide{ grid-column:1 / -1; }
+
+  .led-row{ display:flex; align-items:center; gap:7px; margin-top:4px; }
+  .led{ width:9px;height:9px;border-radius:50%; background:#c7ceda; box-shadow:inset 0 0 2px rgba(0,0,0,.15); transition:.2s ease; }
+  .led.on-blue{ background:var(--blue); box-shadow:0 0 9px rgba(21,101,192,.7); }
+  .led.on-amber{ background:var(--amber); box-shadow:0 0 9px rgba(232,150,12,.7); }
+  .led.on-green{ background:var(--green); box-shadow:0 0 9px rgba(31,157,85,.7); }
+  .led.on-red{ background:var(--red); box-shadow:0 0 9px rgba(224,51,63,.7); animation:blink .6s infinite; }
+  @keyframes blink{ 50%{ opacity:.25; } }
+  .led-label{ font-size:11.5px; color:var(--text-dim); font-weight:600; }
+
+  .bar-track{ width:100%; height:7px; border-radius:5px; background:#e3e8f0; border:1px solid var(--border); overflow:hidden; margin-top:6px; }
+  .bar-fill{ height:100%; width:0%; border-radius:5px; background:linear-gradient(90deg,var(--amber),var(--green)); transition:width .12s linear; }
+
+  canvas#scope{ width:100%; height:88px; display:block; border-radius:8px; background:#0d1420; border:1px solid var(--border); }
+
+  .fault-banner{
+    display:none; background:var(--red-soft); border:1px solid var(--red); border-radius:10px;
+    padding:10px 12px; gap:8px; align-items:flex-start;
+  }
+  .fault-banner.show{ display:flex; }
+  .fault-banner .code{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; color:var(--red); white-space:nowrap; }
+  .fault-banner p{ font-size:11.3px; color:#ffc4c9; line-height:1.45; }
+  .fault-banner p b{ color:#ffe6e8; }
+
+  .log{
+    background:#0d1420; border:1px solid #1c2740; border-radius:10px; padding:8px 10px;
+    height:112px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:4px;
+  }
+  .log::-webkit-scrollbar{ width:6px; }
+  .log::-webkit-scrollbar-thumb{ background:#2a3752; border-radius:3px; }
+  .log-entry{ font-size:10.3px; line-height:1.35; color:#8fa0bd; display:flex; gap:6px; font-family:'JetBrains Mono',monospace; }
+  .log-entry .t{ color:#526078; font-size:9.3px; flex-shrink:0; }
+  .log-entry.fault{ color:#ff8f97; }
+  .log-entry.ok{ color:#7fe3a8; }
+  .log-entry.warn{ color:#f0c060; }
+
+  /* ============ SVG diagram element states ============ */
+  .wire{ stroke:#4a5872; stroke-width:2.4; fill:none; }
+  .wire.energized{ stroke:var(--blue); filter:drop-shadow(0 0 3px rgba(59,142,240,.6)); }
+  .wire.motorline{ stroke:#4a5872; stroke-width:2.4; fill:none; }
+  .wire.motorline.energized{ stroke:var(--blue); filter:drop-shadow(0 0 3px rgba(59,142,240,.6)); }
+  .wire.dashed-missing{ stroke:#3a4760; stroke-width:2; stroke-dasharray:4 4; }
+
+  .term-label{ font-family:'JetBrains Mono',monospace; font-size:10px; fill:var(--text-dim); }
+  .phase-label{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; fill:var(--text-dim); }
+  .small-label{ font-family:'Inter',sans-serif; font-weight:600; font-size:10.5px; fill:var(--text-faint); }
+
+  .box-ssw{ fill:#101827; stroke:var(--border); stroke-width:1.6; transition:stroke .25s, fill .25s; }
+  .box-ssw.fault{ stroke:var(--red); fill:var(--red-soft); }
+
+  .scr-icon .body{ stroke:#4a5872; stroke-width:1.6; fill:none; transition:stroke .2s, filter .2s;}
+  .scr-icon.active .body{ stroke:var(--amber); filter:drop-shadow(0 0 3px rgba(240,168,36,.6)); }
+  .scr-icon.bypassed .body{ stroke:#3a4760; opacity:.4; }
+
+  .cpu-box{ stroke:#4a5872; stroke-width:1.6; fill:#0d1420; transition:stroke .2s, filter .2s; }
+  .cpu-box.active{ stroke:var(--blue); filter:drop-shadow(0 0 5px rgba(59,142,240,.5)); fill:var(--blue-soft); }
+  .cpu-text{ fill:var(--text-faint); font-family:'JetBrains Mono',monospace; font-size:9.5px; transition:fill .2s;}
+  .cpu-text.active{ fill:var(--blue); }
+
+  .bypass-switch{ stroke:#4a5872; stroke-width:2; transition:stroke .2s, filter .25s; }
+  .bypass-switch.closed{ stroke:var(--green); filter:drop-shadow(0 0 4px rgba(51,197,121,.6)); }
+
+  .flow-dash{ stroke-dasharray:6 8; }
+  .flow-anim{ animation:flow .6s linear infinite; }
+  @keyframes flow{ to{ stroke-dashoffset:-28; } }
+
+  .di1-btn-body{ stroke:#4a5872; stroke-width:1.8; fill:#101827; transition:.2s; }
+  .di1-btn-body.pressed{ stroke:var(--blue); fill:var(--blue-soft); filter:drop-shadow(0 0 5px rgba(59,142,240,.5)); }
+
+  .term6box, .term13box{ stroke:#4a5872; stroke-width:1.4; fill:#0d1420; }
+  .term6box.active, .term13box.active{ stroke:var(--blue); fill:var(--blue-soft); }
+
+  .missing-x{ stroke:var(--red); stroke-width:2; opacity:0; transition:opacity .2s;}
+  .missing-x.show{ opacity:1; }
+
+  /* ============ MOTOR (realistic) ============ */
+  .motor-backing{ fill:#e7eaef; stroke:#c7cdd8; stroke-width:1.4; }
+  .motor-frame{ fill:#b3312f; stroke:#7a1f1e; stroke-width:1.6; }
+  .motor-endshield{ fill:#8f2624; stroke:#7a1f1e; stroke-width:1.4; }
+  .motor-fin{ stroke:#8a2726; stroke-width:2; }
+  .motor-fancover{ fill:#7a1f1e; stroke:#5e1817; stroke-width:1.6; }
+  .motor-fanblade{ stroke:#c7cdd8; stroke-width:1.6; }
+  .motor-shaft{ fill:#c7cdd8; stroke:#8b96a8; stroke-width:1; }
+  .motor-tbox{ fill:#8f2624; stroke:#5e1817; stroke-width:1.4; }
+  .motor-tbox-text{ font-family:'Inter',sans-serif; font-weight:800; font-size:13px; fill:#f3d9d8; }
+  .motor-led{ fill:#3a4760; stroke:#5c6b85; stroke-width:1; transition:fill .25s, filter .25s; }
+  .motor-led.run{ fill:var(--green); filter:drop-shadow(0 0 5px rgba(51,197,121,.8)); }
+  .motor-led.ramp{ fill:var(--amber); filter:drop-shadow(0 0 5px rgba(240,168,36,.8)); }
+  .motor-led.fault{ fill:var(--red); filter:drop-shadow(0 0 5px rgba(255,90,104,.8)); }
+  .motor-nameplate{ font-family:'JetBrains Mono',monospace; font-size:10.5px; fill:var(--text-dim); }
+  .fan-group{ transform-origin:246px 475px; }
+  .fan-group.spin{ animation:fanspin 1.1s linear infinite; }
+  @keyframes fanspin{ to{ transform:rotate(360deg); } }
+
+  /* ============ SMALL HMI (WEG keypad) ============ */
+  .hmi-card{ display:flex; flex-direction:column; align-items:center; }
+  .hmi-link-divider{
+    width:2px; height:14px; background:linear-gradient(var(--blue), var(--border));
+    margin:2px auto 8px; position:relative;
+  }
+  .hmi-link-divider::after{
+    content:''; position:absolute; left:50%; bottom:-3px; transform:translateX(-50%);
+    width:6px; height:6px; border-radius:50%; background:var(--blue);
+  }
+  .hmi-device{
+    width:148px; background:linear-gradient(160deg,#2a3242,#1a202c);
+    border-radius:12px; padding:9px; box-shadow:0 6px 16px rgba(20,30,55,.25), inset 0 0 0 1px #3a4356;
+  }
+  .hmi-brand{ text-align:center; font-size:8px; letter-spacing:1.2px; color:#8b96b0; font-weight:700; margin-bottom:6px; }
+  .hmi-screen{
+    background:#c9dfc4; border:2px solid #6c7a5a; border-radius:4px; padding:6px 7px;
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:#20301c; line-height:1.45;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.25);
+  }
+  .hmi-screen .status-line{ font-weight:700; }
+  .hmi-keys{ display:flex; justify-content:space-between; align-items:center; margin-top:7px; }
+  .hmi-dpad{ display:grid; grid-template-columns:18px 18px 18px; grid-template-rows:16px 16px 16px; gap:2px; }
+  .hmi-key{
+    background:#3a4356; border-radius:4px; display:flex; align-items:center; justify-content:center;
+    color:#c7ceda; font-size:8px; box-shadow:0 1px 0 rgba(255,255,255,.06) inset;
+  }
+  .hmi-esc-ent{ display:flex; flex-direction:column; gap:4px; }
+  .hmi-key-lg{
+    background:#3a4356; border-radius:5px; padding:3px 6px; font-size:7.5px; color:#c7ceda; text-align:center;
+    box-shadow:0 1px 0 rgba(255,255,255,.06) inset;
+  }
+  .hmi-runstop{ display:flex; gap:6px; justify-content:center; margin-top:7px; }
+  .hmi-btn-round{
+    width:21px;height:21px;border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:9.5px; box-shadow:0 2px 4px rgba(0,0,0,.3), inset 0 1px 1px rgba(255,255,255,.2);
+  }
+  .hmi-btn-round.stop{ background:#8a2530; color:#ffd7db; }
+  .hmi-btn-round.run{ background:#1f6b3a; color:#c9f2d6; transition:background .2s, box-shadow .2s; }
+  .hmi-btn-round.run.active{ background:var(--green); box-shadow:0 0 10px rgba(31,157,85,.8), inset 0 1px 1px rgba(255,255,255,.3); }
+  .hmi-alarm-led{
+    width:9px;height:9px;border-radius:50%; background:#4a2226; margin-left:auto; transition:.2s;
+  }
+  .hmi-alarm-led.on{ background:var(--red); box-shadow:0 0 8px var(--red); animation:blink .6s infinite; }
+  .hmi-toprow{ display:flex; align-items:center; margin-bottom:6px; }
+
+  footer.credit{ text-align:center; margin-top:6px; font-size:9px; color:#5c6b80; letter-spacing:.3px; flex-shrink:0; }
+
+  /* ============ MOBILE FULL-SCREEN MODE ============ */
+  .log-toggle{
+    display:none; width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text-dim); font-family:'Inter',sans-serif; font-weight:700; font-size:11px;
+    padding:7px; border-radius:8px; cursor:pointer; margin-top:4px;
+  }
+  @media (max-width: 700px){
+    :root{ font-size:12.5px; }
+    body{ padding:8px; }
+    .topbar{ padding:8px 10px; margin-bottom:8px; }
+    .signature .role, .signature .proj{ display:none; }
+    .avatar{ width:32px; height:32px; font-size:11px; }
+    .signature h1{ font-size:13px; }
+    .mode-btn{ padding:7px 9px; font-size:10px; }
+    .grid{ gap:8px; }
+    .panel{ padding:9px 10px 10px; }
+    .legend{ display:none; }
+    .whats-happening{ padding:7px 9px; }
+    .whats-happening p{ font-size:10.5px; }
+    .hmi-device{ width:120px; padding:7px; }
+    .status-grid{ gap:6px; }
+    .status-cell{ padding:6px 8px; }
+    canvas#scope{ height:64px; }
+    .log-toggle{ display:block; }
+    .log-panel .log{ display:none; }
+    .log-panel.open .log{ display:flex; }
+    .log-panel .panel-title{ margin-bottom:0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="signature">
+      <div class="avatar">LF</div>
+      <div>
+        <h1>SSW900 — Simulador de Partida Suave</h1>
+        <div class="role">Soft Starter WEG · Motor 110 kW · 1770 rpm</div>
+        <div class="proj">Luiz Fernando Gonzaga Penaforte — Formando Técnico em Automação Industrial</div>
+      </div>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Tipo de ligação">
+      <button class="mode-btn active" id="btn-line" onclick="setConnection('line')">Ligação em Linha (3 cabos)</button>
+      <button class="mode-btn" id="btn-delta" onclick="setConnection('delta')">Inside Delta (6 cabos)</button>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ============ DIAGRAM ============ -->
+    <div class="panel diagram-panel">
+      <div class="panel-title">
+        <span>Diagrama unifilar — potência, comando e motor</span>
+        <span class="mono" id="conn-tag" style="color:var(--blue)">MODO: LINHA</span>
+      </div>
+
+      <svg id="diagram" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+
+        <text x="30" y="24" class="phase-label">REDE 440V / 60Hz</text>
+        <line x1="30" y1="38" x2="30" y2="60" class="wire" id="bus-stub"/>
+        <line x1="30" y1="38" x2="700" y2="38" class="wire" id="bus-bar"/>
+
+        <line x1="230" y1="38" x2="230" y2="95" class="wire" id="w-l1"/>
+        <text x="238" y="90" class="term-label" fill="#5b9bff">L1</text>
+        <line x1="360" y1="38" x2="360" y2="95" class="wire" id="w-l2"/>
+        <text x="368" y="90" class="term-label" fill="#e8b23a">L2</text>
+        <line x1="490" y1="38" x2="490" y2="95" class="wire" id="w-l3"/>
+        <text x="498" y="90" class="term-label" fill="#ff8a93">L3</text>
+
+        <text x="221" y="112" class="term-label">R</text>
+        <text x="351" y="112" class="term-label">S</text>
+        <text x="481" y="112" class="term-label">T</text>
+        <line x1="230" y1="95" x2="230" y2="118" class="wire" id="w-l1b"/>
+        <line x1="360" y1="95" x2="360" y2="118" class="wire" id="w-l2b"/>
+        <line x1="490" y1="95" x2="490" y2="118" class="wire" id="w-l3b"/>
+
+        <!-- === SSW900 enclosure === -->
+        <rect x="150" y="118" width="550" height="228" rx="10" class="box-ssw" id="ssw-box"/>
+        <text x="168" y="142" style="font-family:'Inter',sans-serif;font-weight:800;font-size:15px;" fill="var(--text)">SSW900</text>
+        <text x="168" y="158" class="small-label">SOFT STARTER · WEG</text>
+
+        <g id="cpu-group" transform="translate(168,172)">
+          <rect x="0" y="0" width="54" height="40" rx="4" class="cpu-box" id="cpu-box"/>
+          <text x="27" y="17" text-anchor="middle" class="cpu-text" id="cpu-text-1">CPU</text>
+          <text x="27" y="30" text-anchor="middle" class="cpu-text mono" id="cpu-text-2" style="font-size:8px;">IDLE</text>
+        </g>
+
+        <g id="scr-r" transform="translate(225,130)">
+          <text x="0" y="-6" class="term-label" fill="#5b9bff">R</text>
+          <line x1="5" y1="0" x2="5" y2="42" class="wire" id="scr-in-r"/>
+          <g class="scr-icon" id="scr-icon-r" transform="translate(-9,42)">
+            <path class="body" d="M14 0 L0 22 L28 22 Z M0 22 L28 44 L0 44 Z"/>
+            <line class="body" x1="-4" y1="22" x2="32" y2="22"/>
+          </g>
+          <line x1="5" y1="108" x2="5" y2="150" class="wire" id="scr-out-r"/>
+          <path d="M5 40 C 30 40, 30 118, 5 118" class="bypass-switch" id="bypass-r" fill="none"/>
+        </g>
+
+        <g id="scr-s" transform="translate(355,130)">
+          <text x="0" y="-6" class="term-label" fill="#e8b23a">S</text>
+          <line x1="5" y1="0" x2="5" y2="42" class="wire" id="scr-in-s"/>
+          <g class="scr-icon" id="scr-icon-s" transform="translate(-9,42)">
+            <path class="body" d="M14 0 L0 22 L28 22 Z M0 22 L28 44 L0 44 Z"/>
+            <line class="body" x1="-4" y1="22" x2="32" y2="22"/>
+          </g>
+          <line x1="5" y1="108" x2="5" y2="150" class="wire" id="scr-out-s"/>
+          <path d="M5 40 C 30 40, 30 118, 5 118" class="bypass-switch" id="bypass-s" fill="none"/>
+        </g>
+
+        <g id="scr-t" transform="translate(485,130)">
+          <text x="0" y="-6" class="term-label" fill="#ff8a93">T</text>
+          <line x1="5" y1="0" x2="5" y2="42" class="wire" id="scr-in-t"/>
+          <g class="scr-icon" id="scr-icon-t" transform="translate(-9,42)">
+            <path class="body" d="M14 0 L0 22 L28 22 Z M0 22 L28 44 L0 44 Z"/>
+            <line class="body" x1="-4" y1="22" x2="32" y2="22"/>
+          </g>
+          <line x1="5" y1="108" x2="5" y2="150" class="wire" id="scr-out-t"/>
+          <path d="M5 40 C 30 40, 30 118, 5 118" class="bypass-switch" id="bypass-t" fill="none"/>
+        </g>
+
+        <text x="518" y="190" class="small-label" fill="var(--text-faint)">K1 · BYPASS</text>
+        <text x="518" y="206" class="small-label mono" id="bypass-state-label">ABERTO</text>
+
+        <g transform="translate(600,172)">
+          <rect x="0" y="0" width="90" height="70" rx="6" class="term6box" id="di-block"/>
+          <text x="10" y="18" class="term-label">TERM. 13 · +24V</text>
+          <rect x="10" y="24" width="14" height="10" rx="2" class="term13box" id="term13"/>
+          <text x="10" y="50" class="term-label">TERM. 6 · DI1</text>
+          <rect x="10" y="56" width="14" height="10" rx="2" class="term6box" id="term6"/>
+        </g>
+
+        <path d="M 690 196 C 715 196, 728 200, 755 200" class="wire" id="w-di1-btn"/>
+        <path d="M 690 220 C 715 220, 728 214, 755 214" class="wire" id="w-24v-btn"/>
+
+        <g transform="translate(755,175)">
+          <circle cx="30" cy="30" r="26" class="di1-btn-body" id="start-btn-body"/>
+          <text x="30" y="34" text-anchor="middle" style="font-family:'Inter',sans-serif;font-weight:700;font-size:11px;" fill="var(--text-dim)" id="start-btn-text">START</text>
+          <text x="30" y="70" text-anchor="middle" class="small-label">BOTOEIRA EXTERNA</text>
+        </g>
+
+        <g transform="translate(168,222)">
+          <text x="0" y="0" class="small-label">RAMPA DE TENSÃO (SCR)</text>
+          <text x="0" y="16" class="mono" id="alpha-readout" style="font-size:12px;fill:var(--amber);">α = 170°</text>
+          <text x="0" y="32" class="mono" id="volt-readout" style="font-size:12px;fill:var(--text-dim);">V out = 0%</text>
+        </g>
+
+        <g transform="translate(755,255)">
+          <rect x="0" y="0" width="120" height="85" rx="8" class="term6box" id="utr-box"/>
+          <text x="10" y="18" style="font-family:'Inter',sans-serif;font-weight:800;font-size:12px;" fill="var(--text)">UTR</text>
+          <text x="10" y="32" class="small-label">Unidade Terminal Remota</text>
+          <line x1="10" y1="40" x2="110" y2="40" stroke="#3a4760" stroke-width="1"/>
+          <text x="10" y="54" class="term-label">SCD INFO90 · MODBUS</text>
+          <text x="10" y="72" class="mono" id="scd-status-label" style="font-size:12px;fill:var(--text-faint);">DESLIGA</text>
+        </g>
+        <path d="M 755 285 C 710 285, 700 250, 690 232" class="wire" id="w-utr-di1" fill="none"/>
+
+        <!-- output terminals -->
+        <text x="221" y="368" class="term-label">U</text>
+        <text x="351" y="368" class="term-label">V</text>
+        <text x="481" y="368" class="term-label">W</text>
+        <path d="M230 280 L230 400 L358 402" class="wire motorline" id="w-u1" fill="none"/>
+        <path d="M360 280 L360 402" class="wire motorline" id="w-v1" fill="none"/>
+        <path d="M490 280 L490 400 L402 402" class="wire motorline" id="w-w1" fill="none"/>
+
+        <g id="delta-leads">
+          <line x1="270" y1="280" x2="270" y2="392" class="wire dashed-missing" id="w-u2"/>
+          <line x1="530" y1="280" x2="530" y2="392" class="wire dashed-missing" id="w-w2"/>
+          <text x="255" y="288" class="term-label" id="lbl-u2" style="fill:var(--text-faint)">U2</text>
+          <text x="515" y="288" class="term-label" id="lbl-w2" style="fill:var(--text-faint)">W2</text>
+          <line x1="258" y1="330" x2="282" y2="354" class="missing-x" id="x-u2a"/>
+          <line x1="282" y1="330" x2="258" y2="354" class="missing-x" id="x-u2b"/>
+          <line x1="518" y1="330" x2="542" y2="354" class="missing-x" id="x-w2a"/>
+          <line x1="542" y1="330" x2="518" y2="354" class="missing-x" id="x-w2b"/>
+        </g>
+
+        <!-- backing plate -->
+        <rect x="208" y="384" width="348" height="146" rx="14" class="motor-backing"/>
+
+        <!-- =========== REALISTIC MOTOR =========== -->
+        <g id="motor-group" transform="translate(0,0)">
+          <rect x="345" y="392" width="70" height="26" rx="4" class="motor-tbox"/>
+          <text x="380" y="410" text-anchor="middle" class="motor-tbox-text">M</text>
+
+          <rect x="260" y="430" width="240" height="92" rx="14" class="motor-frame"/>
+          <g id="motor-fins">
+            <line x1="284" y1="434" x2="284" y2="518" class="motor-fin"/>
+            <line x1="308" y1="434" x2="308" y2="518" class="motor-fin"/>
+            <line x1="332" y1="434" x2="332" y2="518" class="motor-fin"/>
+            <line x1="356" y1="434" x2="356" y2="518" class="motor-fin"/>
+            <line x1="380" y1="434" x2="380" y2="518" class="motor-fin"/>
+            <line x1="404" y1="434" x2="404" y2="518" class="motor-fin"/>
+            <line x1="428" y1="434" x2="428" y2="518" class="motor-fin"/>
+            <line x1="452" y1="434" x2="452" y2="518" class="motor-fin"/>
+            <line x1="476" y1="434" x2="476" y2="518" class="motor-fin"/>
+          </g>
+
+          <rect x="240" y="430" width="24" height="92" rx="8" class="motor-endshield"/>
+
+          <g id="fan-group" class="fan-group">
+            <circle cx="246" cy="476" r="32" class="motor-fancover"/>
+            <line x1="246" y1="452" x2="246" y2="500" class="motor-fanblade"/>
+            <line x1="222" y1="476" x2="270" y2="476" class="motor-fanblade"/>
+            <line x1="230" y1="460" x2="262" y2="492" class="motor-fanblade"/>
+            <line x1="230" y1="492" x2="262" y2="460" class="motor-fanblade"/>
+          </g>
+          <circle cx="246" cy="476" r="5" fill="#9aa6b8"/>
+
+          <rect x="496" y="440" width="18" height="72" rx="6" class="motor-endshield"/>
+          <rect x="510" y="468" width="34" height="16" rx="3" class="motor-shaft"/>
+
+          <circle cx="484" cy="444" r="6.5" class="motor-led" id="motor-led"/>
+        </g>
+
+        <text x="380" y="548" text-anchor="middle" class="motor-nameplate" id="motor-caption">110 kW · 4 POLOS · 440V/60Hz · IP55 · 0 rpm</text>
+        <text x="380" y="565" text-anchor="middle" class="small-label" id="motor-tb-label">CAIXA DE LIGAÇÃO — 3 CABOS (U V W)</text>
+
+      </svg>
+
+      <div class="legend">
+        <span><i class="dot" style="background:var(--blue)"></i>Circuito de comando energizado</span>
+        <span><i class="dot" style="background:var(--amber)"></i>SCR conduzindo (rampa)</span>
+        <span><i class="dot" style="background:var(--green)"></i>Bypass fechado / regime</span>
+        <span><i class="dot" style="background:var(--red)"></i>Falha</span>
+      </div>
+
+      <div class="whats-happening">
+        <div class="ico">💡</div>
+        <p><span class="eyebrow">O que está acontecendo</span><span id="whats-happening-text">Sistema parado. Pressione <b>START</b> para energizar a entrada DI1 (terminal 6) via +24V (terminal 13) e iniciar a sequência de partida da SSW900.</span></p>
+      </div>
+    </div>
+
+    <!-- ============ IHM + STATUS ============ -->
+    <div class="side">
+
+      <div class="panel">
+        <div class="panel-title"><span>IHM local · SSW900-HMI</span></div>
+        <div class="hmi-card">
+          <div class="hmi-device">
+            <div class="hmi-brand">WEG · SSW900</div>
+            <div class="hmi-screen">
+              <div class="hmi-toprow">
+                <span>SSW900&nbsp;&nbsp;LOCAL</span>
+                <span class="hmi-alarm-led" id="hmi-alarm-led"></span>
+              </div>
+              <div>I: <span id="hmi-current">000</span> A&nbsp;&nbsp;V: <span id="hmi-volt">000</span> V</div>
+              <div>N: <span id="hmi-rpm">0000</span> RPM</div>
+              <div class="status-line" id="hmi-status">STOP</div>
+            </div>
+            <div class="hmi-keys">
+              <div class="hmi-dpad">
+                <div></div><div class="hmi-key">▲</div><div></div>
+                <div class="hmi-key">◀</div><div class="hmi-key">●</div><div class="hmi-key">▶</div>
+                <div></div><div class="hmi-key">▼</div><div></div>
+              </div>
+              <div class="hmi-esc-ent">
+                <div class="hmi-key-lg">ESC</div>
+                <div class="hmi-key-lg">ENT</div>
+              </div>
+            </div>
+            <div class="hmi-runstop">
+              <div class="hmi-btn-round stop">O</div>
+              <div class="hmi-btn-round run" id="hmi-run-btn">I</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hmi-link-divider"></div>
+
+        <div class="panel-title"><span>Status da partida</span></div>
+        <div class="status-grid">
+          <div class="status-cell">
+            <div class="label">DI1 / +24V</div>
+            <div class="led-row"><span class="led" id="led-di1"></span><span class="led-label" id="txt-di1">Aguardando</span></div>
+          </div>
+          <div class="status-cell">
+            <div class="label">CPU SSW900</div>
+            <div class="led-row"><span class="led" id="led-cpu"></span><span class="led-label" id="txt-cpu">Idle</span></div>
+          </div>
+          <div class="status-cell">
+            <div class="label">Bypass K1</div>
+            <div class="led-row"><span class="led" id="led-bypass"></span><span class="led-label" id="txt-bypass">Aberto</span></div>
+          </div>
+          <div class="status-cell">
+            <div class="label">Falha</div>
+            <div class="led-row"><span class="led" id="led-fault"></span><span class="led-label" id="txt-fault">Nenhuma</span></div>
+          </div>
+          <div class="status-cell wide">
+            <div class="label">Rampa de tensão / rotação</div>
+            <div class="value mono" id="ramp-value">0%</div>
+            <div class="bar-track"><div class="bar-fill" id="ramp-bar"></div></div>
+          </div>
+          <div class="status-cell wide">
+            <div class="label">Velocidade do motor</div>
+            <div class="value mono" id="rpm-value">0 rpm</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ COMANDO + SCOPE + LOG ============ -->
+    <div class="side">
+
+      <div class="panel">
+        <div class="panel-title"><span>Comando</span></div>
+        <div class="btn-row">
+          <button class="btn btn-start" id="btn-start" onclick="startSequence()">▶ Start (DI1)</button>
+          <button class="btn btn-reset" onclick="resetSequence()">Reset</button>
+        </div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn btn-demo" id="btn-demo" onclick="toggleDemo()">⟳ Demo Automático</button>
+        </div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn btn-remote" id="btn-remote" onclick="toggleRemote()">⚪ DESLIGA — SCD INFO90 (UTR)</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>Forma de onda de saída — fases R·S·T</span></div>
+        <canvas id="scope" width="600" height="240"></canvas>
+      </div>
+
+      <div class="fault-banner" id="fault-banner">
+        <div class="code">F018</div>
+        <p><b>Falha de Tensão de Saída.</b> A parametrização do SSW900 está em <b>Inside Delta (6 cabos)</b>, mas a instalação física tem apenas <b>3 cabos</b> no motor. A CPU não detecta o fechamento do triângulo interno e aborta a partida antes de energizar os SCRs.</p>
+      </div>
+
+      <div class="panel log-panel" id="log-panel">
+        <div class="panel-title"><span>Log de eventos</span></div>
+        <button class="log-toggle" onclick="document.getElementById('log-panel').classList.toggle('open');">▾ Ver log</button>
+        <div class="log" id="log"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="credit">Luiz Fernando Gonzaga Penaforte — Formando Técnico em Automação Industrial · Simulador educacional, não representa o firmware real do SSW900</footer>
+</div>
+
+<script>
+let connection = 'line';
+let state = 'idle';
+let rampStart = 0;
+const RAMP_MS = 9000;
+let rampPct = 0;
+let rpm = 0;
+let running = false;
+let faultActive = false;
+let timers = [];
+let demoActive = false;
+let demoTimers = [];
+let remoteOn = false;
+
+const els = {
+  ledDi1: document.getElementById('led-di1'), txtDi1: document.getElementById('txt-di1'),
+  ledCpu: document.getElementById('led-cpu'), txtCpu: document.getElementById('txt-cpu'),
+  ledBypass: document.getElementById('led-bypass'), txtBypass: document.getElementById('txt-bypass'),
+  ledFault: document.getElementById('led-fault'), txtFault: document.getElementById('txt-fault'),
+  rampValue: document.getElementById('ramp-value'), rampBar: document.getElementById('ramp-bar'),
+  rpmValue: document.getElementById('rpm-value'),
+  startBtn: document.getElementById('btn-start'),
+  faultBanner: document.getElementById('fault-banner'),
+  log: document.getElementById('log'),
+  whatsText: document.getElementById('whats-happening-text'),
+  connTag: document.getElementById('conn-tag'),
+  motorTbLabel: document.getElementById('motor-tb-label'),
+  motorCaption: document.getElementById('motor-caption'),
+  alphaReadout: document.getElementById('alpha-readout'),
+  voltReadout: document.getElementById('volt-readout'),
+  bypassStateLabel: document.getElementById('bypass-state-label'),
+  cpuText2: document.getElementById('cpu-text-2'),
+  startBtnText: document.getElementById('start-btn-text'),
+  hmiCurrent: document.getElementById('hmi-current'),
+  hmiVolt: document.getElementById('hmi-volt'),
+  hmiRpm: document.getElementById('hmi-rpm'),
+  hmiStatus: document.getElementById('hmi-status'),
+  hmiAlarmLed: document.getElementById('hmi-alarm-led'),
+  hmiRunBtn: document.getElementById('hmi-run-btn'),
+  motorLed: document.getElementById('motor-led'),
+  fanGroup: document.getElementById('fan-group'),
+  btnRemote: document.getElementById('btn-remote'),
+  scdStatusLabel: document.getElementById('scd-status-label'),
+};
+
+function log(msg, kind){
+  const t = new Date();
+  const ts = t.toLocaleTimeString('pt-BR', {hour12:false});
+  const div = document.createElement('div');
+  div.className = 'log-entry' + (kind ? ' '+kind : '');
+  div.innerHTML = '<span class="t">'+ts+'</span><span>'+msg+'</span>';
+  els.log.prepend(div);
+}
+
+function setWhats(html){ els.whatsText.innerHTML = html; }
+
+function setConnection(mode){
+  connection = mode;
+  document.getElementById('btn-line').classList.toggle('active', mode==='line');
+  document.getElementById('btn-delta').classList.toggle('active', mode==='delta');
+  document.getElementById('btn-delta').classList.toggle('delta-active', mode==='delta');
+  els.connTag.textContent = mode==='line' ? 'MODO: LINHA' : 'MODO: INSIDE DELTA';
+  els.connTag.style.color = mode==='line' ? 'var(--blue)' : 'var(--amber)';
+
+  const deltaLeads = document.getElementById('delta-leads');
+  if(mode==='delta'){
+    deltaLeads.style.display = 'block';
+    els.motorTbLabel.textContent = 'CAIXA DE LIGAÇÃO — 6 CABOS NECESSÁRIOS (SOMENTE 3 PRESENTES)';
+    ['x-u2a','x-u2b','x-w2a','x-w2b'].forEach(id=>document.getElementById(id).classList.add('show'));
+    setWhats('Modo <b>Inside Delta</b> selecionado. Esta configuração exige acesso às 6 pontas do motor (U1V1W1 / U2V2W2), mas a instalação física só tem 3 cabos disponíveis — pressione START para ver a falha.');
+  } else {
+    deltaLeads.style.display = 'none';
+    els.motorTbLabel.textContent = 'CAIXA DE LIGAÇÃO — 3 CABOS (U V W)';
+    ['x-u2a','x-u2b','x-w2a','x-w2b'].forEach(id=>document.getElementById(id).classList.remove('show'));
+    setWhats('Modo <b>Ligação em Linha</b> selecionado — parametrização compatível com a fiação de 3 cabos. Pressione START para iniciar a partida.');
+  }
+  resetSequence(true);
+}
+
+function clearTimers(){ timers.forEach(t=>clearTimeout(t)); timers = []; }
+
+function startSequence(source){
+  source = source || 'local';
+  if(state !== 'idle' && state !== 'fault') return;
+  resetVisuals();
+  els.startBtn.disabled = true;
+  els.btnRemote.disabled = true;
+
+  if(source === 'local'){
+    document.getElementById('start-btn-body').classList.add('pressed');
+    els.startBtnText.textContent = 'ON';
+    log('Comando START recebido na botoeira externa.');
+  } else {
+    log('Comando LIGA recebido do SCD INFO90 via UTR (Modbus).', 'ok');
+  }
+  els.hmiRunBtn.classList.add('active');
+  state = 'di1';
+  setLed(els.ledDi1, els.txtDi1, 'on-blue', 'Energizado');
+  document.getElementById('term6').classList.add('active');
+  document.getElementById('term13').classList.add('active');
+  document.getElementById('di-block').classList.add('active');
+  if(source === 'local'){
+    document.getElementById('w-di1-btn').classList.add('energized');
+    document.getElementById('w-24v-btn').classList.add('energized');
+    log('DI1 (terminal 6) ativada via +24V (terminal 13) — entrada digital de partida reconhecida.', 'ok');
+    setWhats('A botoeira externa energiza a entrada digital <b>DI1 (terminal 6)</b> através do <b>+24V (terminal 13)</b>. Este é o comando de partida local da SSW900.');
+  } else {
+    document.getElementById('utr-box').classList.add('active');
+    document.getElementById('w-utr-di1').classList.add('energized');
+    els.scdStatusLabel.textContent = 'LIGA';
+    els.scdStatusLabel.style.fill = 'var(--green)';
+    log('DI1 (terminal 6) energizada remotamente pela UTR — comando digital do SCD INFO90.', 'ok');
+    setWhats('O <b>SCD INFO90</b> envia o comando LIGA via rede Modbus para a <b>UTR</b>, que energiza a entrada digital <b>DI1</b> da SSW900 remotamente.');
+  }
+
+  timers.push(setTimeout(()=>{
+    state = 'cpu';
+    setLed(els.ledCpu, els.txtCpu, 'on-blue', 'Comando reconhecido');
+    document.getElementById('cpu-box').classList.add('active');
+    els.cpuText2.classList.add('active');
+    els.cpuText2.textContent = 'START';
+    els.hmiStatus.textContent = 'PARTIDA...';
+    log('CPU da SSW900 identifica o comando de partida e inicia a lógica de sequenciamento.', 'ok');
+    setWhats('A <b>CPU da SSW900</b> reconhece o comando de partida e verifica os parâmetros configurados antes de disparar os SCRs.');
+
+    timers.push(setTimeout(()=>{
+      if(connection === 'delta'){
+        triggerFault();
+        return;
+      }
+      beginRamp();
+    }, 1400));
+
+  }, 1100));
+}
+
+function beginRamp(){
+  state = 'ramping';
+  els.cpuText2.textContent = 'RAMPA';
+  els.hmiStatus.textContent = 'RAMPA SCR';
+  log('Fiação validada. SCRs iniciam o disparo em ângulo de fase — rampa de tensão em andamento.', 'ok');
+  ['scr-icon-r','scr-icon-s','scr-icon-t'].forEach(id=>document.getElementById(id).classList.add('active'));
+  ['w-l1','w-l2','w-l3','w-l1b','w-l2b','w-l3b','bus-bar','bus-stub'].forEach(id=>document.getElementById(id).classList.add('energized'));
+  els.motorLed.classList.add('ramp');
+  els.fanGroup.classList.add('spin');
+  setWhats('A fiação foi validada. Os <b>SCRs (tiristores)</b> começam a conduzir em ângulo de fase, elevando gradualmente a tensão aplicada ao motor — o eixo começa a girar.');
+  rampStart = performance.now();
+  running = true;
+}
+
+function completeRampToBypass(){
+  state = 'bypass';
+  log('Rampa concluída — tensão de saída em 100%.', 'ok');
+  log('Fechando contator de bypass (K1)...');
+  ['bypass-r','bypass-s','bypass-t'].forEach(id=>document.getElementById(id).classList.add('closed'));
+  els.bypassStateLabel.textContent = 'FECHADO';
+  setLed(els.ledBypass, els.txtBypass, 'on-green', 'Fechado');
+  setWhats('Tensão de saída em 100%. O <b>contator de bypass (K1)</b> fecha automaticamente para tirar os SCRs de operação contínua.');
+
+  timers.push(setTimeout(()=>{
+    state = 'running';
+    els.cpuText2.textContent = 'RUN';
+    els.hmiStatus.textContent = 'RUN';
+    ['scr-icon-r','scr-icon-s','scr-icon-t'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    ['scr-icon-r','scr-icon-s','scr-icon-t'].forEach(id=>document.getElementById(id).classList.add('bypassed'));
+    ['bypass-r','bypass-s','bypass-t'].forEach(id=>{ const e=document.getElementById(id); e.classList.add('flow-dash','flow-anim'); });
+    els.motorLed.classList.remove('ramp'); els.motorLed.classList.add('run');
+    log('Motor em regime nominal — 1770 rpm — corrente circulando pelo bypass, SCRs fora do circuito.', 'ok');
+    setWhats('Motor em <b>regime nominal — 1770 rpm</b>. A corrente circula pelo bypass; os SCRs ficam fora do circuito, eliminando suas perdas térmicas.');
+  }, 900));
+}
+
+function triggerFault(){
+  state = 'fault';
+  faultActive = true;
+  document.getElementById('ssw-box').classList.add('fault');
+  els.cpuText2.textContent = 'FALHA';
+  els.cpuText2.style.fill = 'var(--red)';
+  els.hmiStatus.textContent = 'F018 FALHA';
+  els.hmiAlarmLed.classList.add('on');
+  els.motorLed.classList.add('fault');
+  setLed(els.ledFault, els.txtFault, 'on-red', 'F018');
+  els.faultBanner.classList.add('show');
+  document.getElementById('start-btn-body').classList.remove('pressed');
+  els.startBtnText.textContent = 'START';
+  els.hmiRunBtn.classList.remove('active');
+  log('FALHA F018 — Falha de Tensão de Saída.', 'fault');
+  log('Parametrização "Inside Delta" incompatível com a fiação física de 3 cabos — CPU aborta a partida antes de disparar os SCRs.', 'fault');
+  setWhats('<b style="color:#ff8a93">Falha F018.</b> A CPU tentou validar a topologia Inside Delta e não encontrou o segundo grupo de bobinas (U2 V2 W2) conectado — a partida é abortada por segurança antes de energizar os SCRs.');
+  els.startBtn.disabled = false;
+}
+
+function setLed(ledEl, txtEl, cls, text){
+  ledEl.className = 'led ' + cls;
+  txtEl.textContent = text;
+}
+
+function updateRemoteUI(){
+  if(remoteOn){
+    els.btnRemote.textContent = '🟢 LIGA — SCD INFO90 (UTR)';
+    els.btnRemote.classList.add('remote-on');
+  } else {
+    els.btnRemote.textContent = '⚪ DESLIGA — SCD INFO90 (UTR)';
+    els.btnRemote.classList.remove('remote-on');
+  }
+}
+
+function toggleRemote(){
+  if(!remoteOn){
+    if(state !== 'idle' && state !== 'fault') return;
+    startSequence('remote');
+    remoteOn = true;
+    updateRemoteUI();
+  } else {
+    log('Comando DESLIGA recebido do SCD INFO90 via UTR — motor parado remotamente.', 'warn');
+    resetSequence();
+  }
+}
+
+function resetVisuals(){
+  clearTimers();
+  faultActive = false; running = false; rampPct = 0; rpm = 0;
+  state = 'idle';
+  remoteOn = false;
+  updateRemoteUI();
+  document.getElementById('utr-box').classList.remove('active');
+  document.getElementById('w-utr-di1').classList.remove('energized');
+  els.scdStatusLabel.textContent = 'DESLIGA';
+  els.scdStatusLabel.style.fill = 'var(--text-faint)';
+  els.btnRemote.disabled = false;
+
+  setLed(els.ledDi1, els.txtDi1, '', 'Aguardando');
+  setLed(els.ledCpu, els.txtCpu, '', 'Idle');
+  setLed(els.ledBypass, els.txtBypass, '', 'Aberto');
+  setLed(els.ledFault, els.txtFault, '', 'Nenhuma');
+
+  document.getElementById('term6').classList.remove('active');
+  document.getElementById('term13').classList.remove('active');
+  document.getElementById('di-block').classList.remove('active');
+  document.getElementById('w-di1-btn').classList.remove('energized');
+  document.getElementById('w-24v-btn').classList.remove('energized');
+  document.getElementById('cpu-box').classList.remove('active');
+  els.cpuText2.classList.remove('active');
+  els.cpuText2.textContent = 'IDLE';
+  els.cpuText2.style.fill = '';
+  document.getElementById('start-btn-body').classList.remove('pressed');
+  els.startBtnText.textContent = 'START';
+  document.getElementById('ssw-box').classList.remove('fault');
+  els.faultBanner.classList.remove('show');
+  els.startBtn.disabled = false;
+  els.hmiRunBtn.classList.remove('active');
+  els.hmiAlarmLed.classList.remove('on');
+  els.hmiStatus.textContent = 'STOP';
+  els.hmiCurrent.textContent = '000';
+  els.hmiVolt.textContent = '000';
+  els.hmiRpm.textContent = '0000';
+  els.motorLed.classList.remove('run','ramp','fault');
+  els.fanGroup.classList.remove('spin');
+
+  ['scr-icon-r','scr-icon-s','scr-icon-t'].forEach(id=>{ document.getElementById(id).classList.remove('active','bypassed'); });
+  ['bypass-r','bypass-s','bypass-t'].forEach(id=>{ document.getElementById(id).classList.remove('closed','flow-dash','flow-anim'); });
+  els.bypassStateLabel.textContent = 'ABERTO';
+  ['w-l1','w-l2','w-l3','w-l1b','w-l2b','w-l3b','bus-bar','bus-stub'].forEach(id=>document.getElementById(id).classList.remove('energized'));
+  ['w-u1','w-v1','w-w1'].forEach(id=>document.getElementById(id).classList.remove('energized'));
+
+  els.rampValue.textContent = '0%';
+  els.rampBar.style.width = '0%';
+  els.rpmValue.textContent = '0 rpm';
+  els.alphaReadout.textContent = 'α = 170°';
+  els.voltReadout.textContent = 'V out = 0%';
+  els.motorCaption.textContent = '110 kW · 4 POLOS · 440V/60Hz · IP55 · 0 rpm';
+}
+
+function resetSequence(silent){
+  resetVisuals();
+  if(!silent){
+    log('Sistema resetado.');
+    setWhats('Sistema parado. Pressione <b>START</b> para energizar a entrada DI1 (terminal 6) via +24V (terminal 13) e iniciar a sequência de partida da SSW900.');
+  }
+}
+
+function tick(now){
+  if(state === 'ramping'){
+    const elapsed = now - rampStart;
+    rampPct = Math.min(1, elapsed / RAMP_MS);
+    rpm = Math.round(rampPct * 1770);
+    const voltPct = Math.round(30 + rampPct*70);
+    const alpha = Math.round(170 - rampPct*170);
+    const current = Math.round(190 - rampPct*10 + Math.sin(now/200)*3);
+
+    els.rampValue.textContent = Math.round(rampPct*100) + '%';
+    els.rampBar.style.width = (rampPct*100) + '%';
+    els.rpmValue.textContent = rpm + ' rpm';
+    els.alphaReadout.textContent = 'α = ' + alpha + '°';
+    els.voltReadout.textContent = 'V out = ' + voltPct + '%';
+    els.motorCaption.textContent = '110 kW · 4 POLOS · 440V/60Hz · IP55 · ' + rpm + ' rpm';
+    els.hmiCurrent.textContent = String(current).padStart(3,'0');
+    els.hmiVolt.textContent = String(Math.round(440*voltPct/100)).padStart(3,'0');
+    els.hmiRpm.textContent = String(rpm).padStart(4,'0');
+
+    if(rampPct >= 0.15){
+      ['w-u1','w-v1','w-w1'].forEach(id=>document.getElementById(id).classList.add('energized'));
+    }
+
+    if(rampPct >= 1){
+      rpm = 1770;
+      els.rpmValue.textContent = '1770 rpm';
+      els.motorCaption.textContent = '110 kW · 4 POLOS · 440V/60Hz · IP55 · 1770 rpm';
+      els.hmiRpm.textContent = '1770';
+      completeRampToBypass();
+    }
+  } else if(state === 'bypass' || state === 'running'){
+    rpm = 1770;
+    els.hmiCurrent.textContent = String(160 + Math.round(Math.sin(now/300)*3)).padStart(3,'0');
+    els.hmiVolt.textContent = '440';
+    els.hmiRpm.textContent = '1770';
+  }
+
+  drawScope(now);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+const canvas = document.getElementById('scope');
+const ctx = canvas.getContext('2d');
+let canvasReady = false;
+function resizeCanvas(){
+  const w0 = canvas.clientWidth, h0 = canvas.clientHeight;
+  if(w0 === 0 || h0 === 0) return;
+  canvas.width = w0 * 2;
+  canvas.height = h0 * 2;
+  ctx.setTransform(2,0,0,2,0,0);
+  canvasReady = true;
+}
+if(window.ResizeObserver){
+  new ResizeObserver(resizeCanvas).observe(canvas);
+} else {
+  window.addEventListener('resize', resizeCanvas);
+  setTimeout(resizeCanvas, 50);
+  setTimeout(resizeCanvas, 350);
+  setTimeout(resizeCanvas, 1300);
+}
+
+function drawScope(now){
+  if(!canvasReady) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+
+  ctx.strokeStyle = 'rgba(150,165,190,.16)';
+  ctx.lineWidth = 1;
+  for(let x=0;x<w;x+=w/12){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for(let y=0;y<h;y+=h/6){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(150,165,190,.3)';
+  ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+
+  if(faultActive){
+    ctx.strokeStyle = '#ff4d5e';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for(let x=0;x<w;x++){
+      const y = h/2 + (Math.random()-0.5)*6;
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#ff4d5e';
+    ctx.font = '600 11px JetBrains Mono, monospace';
+    ctx.fillText('SEM TENSÃO DE SAÍDA — F018', 12, 16);
+    return;
+  }
+
+  let amp;
+  let colors = ['#ff9fae', '#ffd98f', '#8fb6ff'];
+  if(state === 'bypass' || state === 'running'){ amp = 1; }
+  else if(state === 'ramping'){ amp = 0.22 + rampPct*0.78; }
+  else { amp = 0; }
+
+  const maxAmp = (h/2 - 14);
+  const t = now/1000;
+  const freq = 2.4;
+  [0, -120, -240].forEach((phaseDeg, i)=>{
+    const phase = phaseDeg * Math.PI/180;
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = (state==='bypass'||state==='running') ? 2 : 1.6;
+    ctx.globalAlpha = amp>0 ? 0.85 : 0.15;
+    ctx.beginPath();
+    for(let x=0;x<=w;x++){
+      const xt = x/w * Math.PI*2*freq + t*4 + phase;
+      const y = h/2 - Math.sin(xt)*maxAmp*amp;
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = '#8fa0bd';
+  ctx.font = '600 10px JetBrains Mono, monospace';
+  const stateLabel = state==='bypass'||state==='running' ? 'BYPASS — ONDA PURA' :
+                      state==='ramping' ? 'SCR — TENSÃO EM RAMPA' : 'SEM SINAL';
+  ctx.fillText(stateLabel, 12, 16);
+}
+
+log('Simulador pronto. Selecione o tipo de ligação e pressione START.');
+
+/* ============ DEMO AUTOMÁTICO ============ */
+function clearDemoTimers(){ demoTimers.forEach(t=>clearTimeout(t)); demoTimers = []; }
+
+function setControlsDisabled(disabled){
+  document.getElementById('btn-line').disabled = disabled;
+  document.getElementById('btn-delta').disabled = disabled;
+  document.getElementById('btn-line').style.opacity = disabled ? .5 : 1;
+  document.getElementById('btn-delta').style.opacity = disabled ? .5 : 1;
+  document.getElementById('btn-line').style.pointerEvents = disabled ? 'none' : 'auto';
+  document.getElementById('btn-delta').style.pointerEvents = disabled ? 'none' : 'auto';
+  document.getElementById('btn-start').style.pointerEvents = disabled ? 'none' : 'auto';
+  document.getElementById('btn-start').style.opacity = disabled ? .5 : 1;
+}
+
+function toggleDemo(){
+  demoActive ? stopDemo() : startDemoMode();
+}
+
+function startDemoMode(){
+  demoActive = true;
+  const btn = document.getElementById('btn-demo');
+  btn.textContent = '⏹ Parar Demo';
+  btn.classList.add('demo-active');
+  setControlsDisabled(true);
+  log('Demo automático iniciado — alternando Ligação em Linha e Inside Delta.');
+  runDemoStepLine();
+}
+
+function stopDemo(){
+  demoActive = false;
+  clearDemoTimers();
+  const btn = document.getElementById('btn-demo');
+  btn.textContent = '⟳ Demo Automático';
+  btn.classList.remove('demo-active');
+  setControlsDisabled(false);
+  resetSequence();
+  log('Demo automático encerrado.');
+}
+
+function runDemoStepLine(){
+  if(!demoActive) return;
+  setConnection('line');
+  demoTimers.push(setTimeout(()=>{
+    if(!demoActive) return;
+    startSequence();
+    const holdTime = 1100 + 1400 + RAMP_MS + 900 + 6000;
+    demoTimers.push(setTimeout(()=>{ if(demoActive) runDemoStepDelta(); }, holdTime));
+  }, 1200));
+}
+
+function runDemoStepDelta(){
+  if(!demoActive) return;
+  setConnection('delta');
+  demoTimers.push(setTimeout(()=>{
+    if(!demoActive) return;
+    startSequence();
+    const holdTime = 1100 + 1400 + 1400 + 6000;
+    demoTimers.push(setTimeout(()=>{ if(demoActive) runDemoStepLine(); }, holdTime));
+  }, 1200));
+}
+</script>
+</body>
+</html>
